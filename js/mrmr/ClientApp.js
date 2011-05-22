@@ -1,35 +1,67 @@
 
 (function() {
 	
-	Mrmr.Button = function(button) {
-		console.log("constructing", button);
-		this.test2();
-		this.test(button);
-		this.registerEvents(button);
+	Mrmr.Button = function(app, id) {
+		this._app = app;
+		this._id = id;
 	};
 	
 	Mrmr.Button.prototype = {
 		
-		_wasPressed				: false,
-		
+		_app					: null,
+		_id						: null,
+		_isPressed				: false,
+		_isMouseDown            : false,
+
 		click: function() {
 			this._wasPressed = true;
 		},
 		
-		test2 : function() {
-			console.log('test2');
+		registerEvents: function(button) {
+			var that = this;
+			
+			button.onmousedown = function() {
+				that.press(true);
+				that._isMouseDown = true;
+				that._isPressed = true;
+			};
+			
+			button.onmouseout = function() {
+				if (that._isMouseDown) {
+					that.press(false);
+					that._isPressed = false;
+				}
+			};
+			
+			button.onmouseover = function() {
+				if (that._isMouseDown) {
+					that.press(true);
+					that._isPressed = true;
+				}
+			};
+			
+			button.onmouseup = function() {
+				if (that._isMouseDown) {
+					that.press(false);
+					that._isMouseDown = false;
+					that._isPressed = false;
+				}
+			};
+			
+			button.onclick = function() {
+				that.click();
+			};
 		},
 		
-		test : function(test) {
-			console.log('here');
+		press: function(isPressed) {
+			console.log('press', isPressed);
+			this._app.netChannel.addMessageToQueue(true, Mrmr.Constants.CMDS.BUTTON_PRESS, { id: this._id, value: isPressed });
 		},
 		
-		registerEvents: function(aButton) {
-			console.log('registering');
-			aButton.click(function() { console.log('test', this.id); });
+		click: function() {
+			console.log('click');
+			this._app.netChannel.addMessageToQueue(true, Mrmr.Constants.CMDS.BUTTON_CLICK, { id: this._id });
 		}
-		
-		// TODO: know how to send your own message to the server
 		
 	};
 	
@@ -135,7 +167,7 @@
 	Mrmr.ClientApp = function() {
 		this.gameClockReal = new Date().getTime();
 		this.netChannel = new RealtimeMultiplayerGame.ClientNetChannel( this );
-
+		
 		this.registerElements();
 	};
 
@@ -156,13 +188,14 @@
 
 		registerElements: function() {
 			
+			var that = this;
+			
 			// Buttons
 			var doc = document.getElementsByTagName('button');
 			
-			
 			for (var i = 0; i < doc.length; i++){
-				console.log('test', i, doc[i].id);
-				Mrmr.Button(doc[i]);
+				var button = new Mrmr.Button(that, doc[i].id);
+				button.registerEvents(doc[i]);
 			}
 
 		},

@@ -44,7 +44,8 @@
 		 * If it is set, it will call that CMD on its delegate
 		 */
 		setupCmdMap: function() {
-			this.cmdMap[RealtimeMultiplayerGame.Constants.CMDS.PLAYER_UPDATE] = this.shouldUpdatePlayer;
+			this.cmdMap[Mrmr.Constants.CMDS.BUTTON_PRESS] = this.buttonPress;
+			this.cmdMap[Mrmr.Constants.CMDS.BUTTON_CLICK] = this.buttonClick;
 		},
 
 		/**
@@ -59,7 +60,7 @@
 				entity.updatePosition(this.speedFactor, this.gameClock, this.gameTick );
 			}, this );
 
-			this.sendBufferedOSCMessages();
+//			this.sendBufferedOSCMessages();
 
 			// Create a new world-entity-description,
 			var worldEntityDescription = new RealtimeMultiplayerGame.model.WorldEntityDescription( this, this.entityController.getEntities() );
@@ -69,20 +70,23 @@
 		/**
 		 * Sends all queued OSC messages for each client connected
 		 */
-		sendBufferedOSCMessages: function() {
-			// For each player, send their messages
-			this.playerInfoBuffer.forEach( function(key, clientMessageBuffer) {
-				var i = clientMessageBuffer.length;
-				while (i--) {
-					// This entity is not active - remove
-					var oscMessage = clientMessageBuffer[i];
-					this.oscClient.send(oscMessage);
-				}
-
-				// Reset buffer array
-				this.playerInfoBuffer.setObjectForKey([], key);
-			}, this );
-		},
+//		sendBufferedOSCMessages: function() {
+//			// For each player, send their messages
+//			this.playerInfoBuffer.forEach( function(key, clientMessageBuffer) {
+//				var i = clientMessageBuffer.length;
+//				while (i--) {
+//					// This entity is not active - remove
+//					var oscMessage = clientMessageBuffer[i];
+//					
+//					console.log('osc:', oscMessage);
+//					
+//					this.oscClient.send(oscMessage);
+//				}
+//
+//				// Reset buffer array
+//				this.playerInfoBuffer.setObjectForKey([], key);
+//			}, this );
+//		},
 
 		/**
 		 * Updates the gameclock and sets the current
@@ -102,8 +106,25 @@
 			this.speedFactor = delta / ( 1000/this.targetFramerate );
 			if (this.speedFactor <= 0) this.speedFactor = 1;
 		},
+		
+		buttonPress: function(client, data) {
+			console.log('press', client.clientid, data.payload);
+			
+			var oscMessage = new OSC.Message("/nodejs/" + client.clientid);
+			    oscMessage.append(['press']);
+			
+			this.oscClient.send(oscMessage);
+		},
+		
+		buttonClick: function(client, data) {
+			console.log('click', client.clientid, data.payload);
+			
+			var oscMessage = new OSC.Message("/nodejs/" + client.clientid);
+			    oscMessage.append(['click']);
 
-
+			this.oscClient.send(oscMessage);
+		},
+		
 		shouldAddPlayer: function( aClientid, data ) {
 			var playerEntity = new RealtimeMultiplayerGame.model.GameEntity( this.getNextEntityID(), aClientid );
 			this.playerInfoBuffer.setObjectForKey([], aClientid);

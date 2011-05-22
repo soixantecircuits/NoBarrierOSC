@@ -264,6 +264,7 @@ Version:
 			}
 
 			if(!this.socketio.connected) { // Socket.IO is not connectd, probably not ready yet
+				console.log("(ClientNetChannel)::sendMessage - socketio is not connected!");
 				return;      //some error here
 			}
 
