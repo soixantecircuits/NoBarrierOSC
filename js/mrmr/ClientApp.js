@@ -13,10 +13,6 @@
 		_isPressed				: false,
 		_isMouseDown            : false,
 
-		click: function() {
-			this._wasPressed = true;
-		},
-		
 		registerEvents: function(button) {
 			var that = this;
 			
@@ -50,16 +46,15 @@
 			
 			button.onclick = function() {
 				that.click();
+				return false;
 			};
 		},
 		
 		press: function(isPressed) {
-			console.log('press', isPressed);
 			this._app.netChannel.addMessageToQueue(true, Mrmr.Constants.CMDS.BUTTON_PRESS, { id: this._id, value: isPressed });
 		},
 		
 		click: function() {
-			console.log('click');
 			this._app.netChannel.addMessageToQueue(true, Mrmr.Constants.CMDS.BUTTON_CLICK, { id: this._id });
 		}
 		
@@ -69,95 +64,213 @@
 
 (function() {
 	
-	Mrmr.TactileZone = function() {
-		this.initMouseEvents();
+	Mrmr.TactileZone = function(app, id) {
+		this._app = app;
+		this._id = id;
 	};
 	
 	Mrmr.TactileZone.prototype = {
 			
-		_mouseWasDown			: false,
+		_app					: null,
+		_id						: null,
+		
+		_isOver					: false,
+		_isPressed				: false,
 		_mousePosition			: {},		// Actual mouse position
 		_mousePositionNormalized: {},		// Mouse position 0-1
 
 		/**
 		 * Initialize mouse/touch events
 		 */
-		initMouseEvents: function() {
+		registerEvents: function(div) {
 			var that = this;
-			document.addEventListener('mousedown', function(e) { that.onMouseDown(e) }, false);
-			document.addEventListener('mousemove', function(e) { that.onMouseMove(e) }, false);
-			document.addEventListener('mouseup', function(e) { that.onMouseUp(e) }, false);
-			document.addEventListener("touchstart", that.touchHandler, true);
-			document.addEventListener("touchmove", that.touchHandler, true);
-			document.addEventListener("touchend", that.touchHandler, true);
-			document.addEventListener("touchcancel", that.touchHandler, true);
+			
+			div.onmousedown = function(e) {
+				that.press(true);
+				that._isMouseDown = true;
+				that._isPressed = true;
+			};
+			
+			div.onmouseout = function(e) {
+				if (that._isMouseDown) {
+					that.press(false);
+					that._isPressed = false;
+				}
+				
+				if (that._isOver) {
+					delete(that._app.hoveredComponents[that._id]);
+					that._isOver = false;
+				}
+				
+//				if (e.suppressEvent) {
+//					e.preventDefault();
+//				}
+			};
+			
+			div.onmouseover = function(e) {
+				if (that._isMouseDown) {
+					that.press(true);
+					that._isPressed = true;
+				}
+				
+				if (!that._isOver) {
+					that._app.hoveredComponents[that._id] = that;
+					that._isOver = true;
+				}
+				
+//				if (e.suppressEvent) {
+//					e.preventDefault();
+//				}
+			};
+			
+			div.onmouseup = function(e) {
+				if (that._isMouseDown) {
+					that.press(false);
+					that._isMouseDown = false;
+					that._isPressed = false;
+				}
+				
+//				if (e.suppressEvent) {
+//					e.preventDefault();
+//				}
+			};
+			
+			div.onmousemove = function(e) {
+				var x, y;
+
+				// Get the mouse position relative to the canvas element.
+				if (e.layerX || e.layerX == 0) { // Firefox
+					x = e.layerX;
+					y = e.layerY;
+				} else if (e.offsetX || e.offsetX == 0) { // Opera
+					x = e.offsetX;
+					y = e.offsetY;
+				}
+
+				var curleft = curtop = 0;
+				var obj = this;
+				
+				// Find absolute offset
+				
+				if (obj.offsetParent) {
+					do {
+						curleft += obj.offsetLeft;
+						curtop += obj.offsetTop;
+					} while (obj = obj.offsetParent);
+				}
+				
+				x -= curleft;
+				y -= curtop;
+				
+				that._mousePosition.x = x;
+				that._mousePosition.y = y;
+				
+				var width = parseInt(this.style.width.replace(new RegExp("[a-zA-z]"), ""));
+				var height = parseInt(this.style.height.replace(new RegExp("[a-zA-z]"), ""));
+				
+				console.log("coords", x, y, width, height);
+				
+//				document.getElementById('text').innerHTML = "coords " + x + " " + y; 
+				
+				// Clamp between 0-1 of window size
+				that._mousePositionNormalized.x = Math.max(0.0, Math.min(1.0, x / width));
+				that._mousePositionNormalized.y = Math.max(0.0, Math.min(1.0, y / height));
+				
+//				if (e.suppressEvent) {
+//					e.preventDefault();
+//				}
+			};
+			
+			div.ontouchmove = function(e) {
+				var x, y;
+
+				var touches = event.changedTouches,
+				first = touches[0],
+				
+				x = first.screenX;
+				y = first.screenY;
+
+				var curleft = curtop = 0;
+				var obj = this;
+				
+				// Find absolute offset
+				
+				if (obj.offsetParent) {
+					do {
+						curleft += obj.offsetLeft;
+						curtop += obj.offsetTop;
+					} while (obj = obj.offsetParent);
+				}
+				
+				x -= curleft;
+				y -= curtop;
+				
+				that._mousePosition.x = x;
+				that._mousePosition.y = y;
+				
+				var width = parseInt(this.style.width.replace(new RegExp("[a-zA-z]"), ""));
+				var height = parseInt(this.style.height.replace(new RegExp("[a-zA-z]"), ""));
+				
+//				console.log("coords", x, y, width, height);
+				
+				document.getElementById('text').innerHTML = "coords " + x + " " + y; 
+				
+				// Clamp between 0-1 of window size
+				that._mousePositionNormalized.x = Math.max(0.0, Math.min(1.0, x / width));
+				that._mousePositionNormalized.y = Math.max(0.0, Math.min(1.0, y / height));
+				
+//				if (e.suppressEvent) {
+//					e.preventDefault();
+//				}
+			};
+
+			
+			div.ontouchstart = function(e) {
+				if (!that._isOver) {
+					that._app.hoveredComponents[that._id] = that;
+					that._isOver = true;
+				}
+				
+				e.preventDefault();
+			};
+			
+			div.ontouchend = function(e) { 
+				if (that._isOver) {
+					delete(that._app.hoveredComponents[that._id]);
+					that._isOver = false;
+				}
+				
+				e.preventDefault();
+			};
+			
+			div.ontouchcancel = function(e) { 
+				if (that._isOver) {
+					delete(that._app.hoveredComponents[that._id]);
+					that._isOver = false;
+				}
+				
+				e.preventDefault();
+			};
+			
+//			div.ontouchstart = null;
+//			div.ontouchend = null;
+//			div.ontouchcancel = null;
+			
+//			div.ontouchstart = that.touchHandler;
+//			div.ontouchmove = that.touchHandler;
+//			div.ontouchend = that.touchHandler;
+//			div.ontouchcancel = that.touchHandler;
+			
 		},
 		
 		update: function() {
-			this.updateClock();
-			if(this._mouseIsDown) {
-				this.netChannel.addMessageToQueue( false, RealtimeMultiplayerGame.Constants.CMDS.PLAYER_UPDATE, {
-					x: (this._mousePositionNormalized.x*100) << 0, y:  (this._mousePositionNormalized.y*100) << 0 } );
-			}
-			this.netChannel.tick();
-//			this.entityController.tick(this.speedFactor, this.gameClockReal, this.gameTick);
+			this._app.netChannel.addMessageToQueue(false, Mrmr.Constants.CMDS.TACTILE_MOVE,
+					{ id: this._id, x: (this._mousePositionNormalized.x*100) << 0, y: (this._mousePositionNormalized.y*100) << 0 });
 		},
 		
-		onMouseDown: function(event) {
-			this._mouseIsDown = true;
-		},
-
-		onMouseMove: function(e) {
-			var x, y;
-
-			// Get the mouse position relative to the canvas element.
-			if (e.layerX || e.layerX == 0) { // Firefox
-				x = e.layerX;
-				y = e.layerY;
-			} else if (e.offsetX || e.offsetX == 0) { // Opera
-				x = e.offsetX;
-				y = e.offsetY;
-			}
-
-			this._mousePosition.x = x;
-			this._mousePosition.y = y;
-
-			// Clamp between 0-1 of window size
-			this._mousePositionNormalized.x = Math.max(0.0, Math.min(1.0, this._mousePosition.x / window.innerWidth));
-			this._mousePositionNormalized.y = Math.max(0.0, Math.min(1.0, this._mousePosition.y / window.innerHeight));
-		},
-
-		onMouseUp: function(event) {
-		   this._mouseIsDown = false;
-		},
-
-		/**
-		 * Convert touch to mouse events
-		 * @param event
-		 */
-		touchHandler: function( event ) {
-			var touches = event.changedTouches,
-			first = touches[0],
-			type = "";
-
-			event.preventDefault();
-			switch(event.type) {
-				case "touchstart": type = "mousedown"; break;
-				case "touchmove":  type ="mousemove"; break;
-				case "touchend":   type ="mouseup"; break;
-				default: return;
-			}
-
-			// Pass off as mouse event
-			var fakeMouseEvent = document.createEvent("MouseEvent");
-			fakeMouseEvent.initMouseEvent(type, true, true, window, 1,
-									  first.screenX, first.screenY,
-									  first.clientX, first.clientY, false,
-									  false, false, false, 0, null);
-
-			first.target.dispatchEvent(fakeMouseEvent);
+		press: function(isPressed) {
+			this._app.netChannel.addMessageToQueue(true, Mrmr.Constants.CMDS.TACTILE_PRESS, { id: this._id, value: isPressed });
 		}
-
 	};
 	
 }());
@@ -185,6 +298,7 @@
 		cmdMap					: {},											// Map some custom functions if wnated
 		
 		components				: {},
+		hoveredComponents		: {},
 
 		registerElements: function() {
 			
@@ -197,15 +311,24 @@
 				var button = new Mrmr.Button(that, doc[i].id);
 				button.registerEvents(doc[i]);
 			}
-
+			
+			// Divs
+			var doc = document.getElementsByTagName('div');
+			
+			for (var i = 0; i < doc.length; i++){
+				var div = new Mrmr.TactileZone(that, doc[i].id);
+				div.registerEvents(doc[i]);
+			}
 		},
-		
+
 		update: function() {
 			this.updateClock();
-			if(this._mouseIsDown) {
-				this.netChannel.addMessageToQueue( false, RealtimeMultiplayerGame.Constants.CMDS.PLAYER_UPDATE, {
-					x: (this._mousePositionNormalized.x*100) << 0, y:  (this._mousePositionNormalized.y*100) << 0 } );
+			
+			for (var hc in this.hoveredComponents) {
+				var div = this.hoveredComponents[hc];
+				div.update();
 			}
+			
 			this.netChannel.tick();
 //			this.entityController.tick(this.speedFactor, this.gameClockReal, this.gameTick);
 		},

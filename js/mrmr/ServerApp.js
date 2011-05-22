@@ -46,6 +46,9 @@
 		setupCmdMap: function() {
 			this.cmdMap[Mrmr.Constants.CMDS.BUTTON_PRESS] = this.buttonPress;
 			this.cmdMap[Mrmr.Constants.CMDS.BUTTON_CLICK] = this.buttonClick;
+			this.cmdMap[Mrmr.Constants.CMDS.TACTILE_PRESS] = this.tactilePress;
+			this.cmdMap[Mrmr.Constants.CMDS.TACTILE_MOVE] = this.tactileMove;
+			this.cmdMap[Mrmr.Constants.CMDS.DEBUG] = this.debugCommand;
 		},
 
 		/**
@@ -68,27 +71,6 @@
 		},
 
 		/**
-		 * Sends all queued OSC messages for each client connected
-		 */
-//		sendBufferedOSCMessages: function() {
-//			// For each player, send their messages
-//			this.playerInfoBuffer.forEach( function(key, clientMessageBuffer) {
-//				var i = clientMessageBuffer.length;
-//				while (i--) {
-//					// This entity is not active - remove
-//					var oscMessage = clientMessageBuffer[i];
-//					
-//					console.log('osc:', oscMessage);
-//					
-//					this.oscClient.send(oscMessage);
-//				}
-//
-//				// Reset buffer array
-//				this.playerInfoBuffer.setObjectForKey([], key);
-//			}, this );
-//		},
-
-		/**
 		 * Updates the gameclock and sets the current
 		 */
 		updateClock: function() {
@@ -108,19 +90,47 @@
 		},
 		
 		buttonPress: function(client, data) {
-			console.log('press', client.clientid, data.payload);
+//			console.log('press', client.clientid, data.payload, data.payload.id, data.payload.value);
 			
 			var oscMessage = new OSC.Message("/nodejs/" + client.clientid);
-			    oscMessage.append(['press']);
+			    oscMessage.append([data.payload.id, 'press', data.payload.value ? 0 : 1]);
+			    
+//			console.log(data.payload.value ? 0 : 1, data.payload.value);
 			
-			this.oscClient.send(oscMessage);
+			// TODO: re-implement. currently gives unexpected values.
+//			this.oscClient.send(oscMessage);
+		},
+		
+		tactilePress: function(client, data) {
+//			console.log('press', client.clientid, data.payload);
+			
+			var oscMessage = new OSC.Message("/nodejs/" + client.clientid);
+			    oscMessage.append([data.payload.id, 'press', data.payload.value ? 0 : 1]);
+			    
+//			console.log(data.payload.value ? 0 : 1, data.payload.value);
+			
+			// TODO: re-implement. currently gives unexpected values.
+//			this.oscClient.send(oscMessage);
+		},
+		
+		debugCommand: function(client, data) {
+			console.log('DEBUG', client.clientid, data.payload);
 		},
 		
 		buttonClick: function(client, data) {
-			console.log('click', client.clientid, data.payload);
+//			console.log('click', client.clientid, data.payload);
 			
 			var oscMessage = new OSC.Message("/nodejs/" + client.clientid);
-			    oscMessage.append(['click']);
+			    oscMessage.append([data.payload.id, 'click']);
+
+			this.oscClient.send(oscMessage);
+		},
+		
+		tactileMove: function(client, data) {
+//			console.log('move', client.clientid, data.payload);
+			
+			var oscMessage = new OSC.Message("/nodejs/" + client.clientid);
+			    oscMessage.append([data.payload.id, 'move', data.payload.x, data.payload.y]);
 
 			this.oscClient.send(oscMessage);
 		},
