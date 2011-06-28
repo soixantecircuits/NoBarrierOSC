@@ -83,4 +83,4 @@ Mrmr.extend = function(subc, superc, overrides)
 		}
 
 	}
-}
+};

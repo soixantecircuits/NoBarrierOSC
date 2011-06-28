@@ -13,8 +13,10 @@
 		_isPressed				: false,
 		_isMouseDown            : false,
 
-		registerEvents: function(button) {
+		registerEvents: function(button, enableDefaultAction) {
 			var that = this;
+			
+			enableDefaultAction = typeof(enableDefaultAction) == 'undefined' ? false : enableDefaultAction;
 			
 			button.onmousedown = function() {
 				that.press(true);
@@ -46,7 +48,7 @@
 			
 			button.onclick = function() {
 				that.click();
-				return false;
+				return enableDefaultAction;
 			};
 		},
 		
@@ -97,14 +99,7 @@
 					that._isPressed = false;
 				}
 				
-				if (that._isOver) {
-					delete(that._app.hoveredComponents[that._id]);
-					that._isOver = false;
-				}
-				
-//				if (e.suppressEvent) {
-//					e.preventDefault();
-//				}
+				that.removeHover();
 			};
 			
 			div.onmouseover = function(e) {
@@ -113,14 +108,7 @@
 					that._isPressed = true;
 				}
 				
-				if (!that._isOver) {
-					that._app.hoveredComponents[that._id] = that;
-					that._isOver = true;
-				}
-				
-//				if (e.suppressEvent) {
-//					e.preventDefault();
-//				}
+				that.addHover();
 			};
 			
 			div.onmouseup = function(e) {
@@ -130,11 +118,25 @@
 					that._isPressed = false;
 				}
 				
-//				if (e.suppressEvent) {
-//					e.preventDefault();
-//				}
+				that.removeHover();
 			};
 			
+
+			div.ontouchstart = function(e) {
+				that.addHover();
+				e.preventDefault();
+			};
+			
+			div.ontouchend = function(e) {
+				that.removeHover();
+				e.preventDefault();
+			};
+			
+			div.ontouchcancel = function(e) { 
+				that.removeHover();
+				e.preventDefault();
+			};
+
 			div.onmousemove = function(e) {
 				var x, y;
 
@@ -146,121 +148,64 @@
 					x = e.offsetX;
 					y = e.offsetY;
 				}
-
-				var curleft = curtop = 0;
-				var obj = this;
 				
-				// Find absolute offset
-				
-				if (obj.offsetParent) {
-					do {
-						curleft += obj.offsetLeft;
-						curtop += obj.offsetTop;
-					} while (obj = obj.offsetParent);
-				}
-				
-				x -= curleft;
-				y -= curtop;
-				
-				that._mousePosition.x = x;
-				that._mousePosition.y = y;
-				
-				var width = parseInt(this.style.width.replace(new RegExp("[a-zA-z]"), ""));
-				var height = parseInt(this.style.height.replace(new RegExp("[a-zA-z]"), ""));
-				
-				console.log("coords", x, y, width, height);
-				
-//				document.getElementById('text').innerHTML = "coords " + x + " " + y; 
-				
-				// Clamp between 0-1 of window size
-				that._mousePositionNormalized.x = Math.max(0.0, Math.min(1.0, x / width));
-				that._mousePositionNormalized.y = Math.max(0.0, Math.min(1.0, y / height));
-				
-//				if (e.suppressEvent) {
-//					e.preventDefault();
-//				}
+				that.move(x, y, this);
 			};
 			
 			div.ontouchmove = function(e) {
 				var x, y;
 
 				var touches = event.changedTouches,
-				first = touches[0],
+				      first = touches[0],
+				          x = first.pageX;
+				          y = first.pageY;
 				
-				x = first.screenX;
-				y = first.screenY;
-
-				var curleft = curtop = 0;
-				var obj = this;
-				
-				// Find absolute offset
-				
-				if (obj.offsetParent) {
-					do {
-						curleft += obj.offsetLeft;
-						curtop += obj.offsetTop;
-					} while (obj = obj.offsetParent);
-				}
-				
-				x -= curleft;
-				y -= curtop;
-				
-				that._mousePosition.x = x;
-				that._mousePosition.y = y;
-				
-				var width = parseInt(this.style.width.replace(new RegExp("[a-zA-z]"), ""));
-				var height = parseInt(this.style.height.replace(new RegExp("[a-zA-z]"), ""));
-				
-//				console.log("coords", x, y, width, height);
-				
-				document.getElementById('text').innerHTML = "coords " + x + " " + y; 
-				
-				// Clamp between 0-1 of window size
-				that._mousePositionNormalized.x = Math.max(0.0, Math.min(1.0, x / width));
-				that._mousePositionNormalized.y = Math.max(0.0, Math.min(1.0, y / height));
-				
-//				if (e.suppressEvent) {
-//					e.preventDefault();
-//				}
+				that.move(x, y, this);
 			};
-
+		},
+		
+		addHover: function() {
+			if (!this._isOver) {
+				this._app.hoveredComponents[this._id] = this;
+				this._isOver = true;
+			}
+		},
+		
+		removeHover: function() {
+			if (this._isOver) {
+				delete(this._app.hoveredComponents[this._id]);
+				this._isOver = false;
+			}
+		},
+		
+		move: function(x, y, element) {
+			var curLeft = curTop = 0;
+			var obj = element;
 			
-			div.ontouchstart = function(e) {
-				if (!that._isOver) {
-					that._app.hoveredComponents[that._id] = that;
-					that._isOver = true;
-				}
-				
-				e.preventDefault();
-			};
+			// Find absolute offset
 			
-			div.ontouchend = function(e) { 
-				if (that._isOver) {
-					delete(that._app.hoveredComponents[that._id]);
-					that._isOver = false;
-				}
-				
-				e.preventDefault();
-			};
+			if (obj.offsetParent) {
+				do {
+					curLeft += obj.offsetLeft;
+					curTop += obj.offsetTop;
+				} while (obj = obj.offsetParent);
+			}
 			
-			div.ontouchcancel = function(e) { 
-				if (that._isOver) {
-					delete(that._app.hoveredComponents[that._id]);
-					that._isOver = false;
-				}
-				
-				e.preventDefault();
-			};
+			x -= curLeft;
+			y -= curTop;
 			
-//			div.ontouchstart = null;
-//			div.ontouchend = null;
-//			div.ontouchcancel = null;
+			this._mousePosition.x = x;
+			this._mousePosition.y = y;
 			
-//			div.ontouchstart = that.touchHandler;
-//			div.ontouchmove = that.touchHandler;
-//			div.ontouchend = that.touchHandler;
-//			div.ontouchcancel = that.touchHandler;
+			var width = $(element).width();
+			var height = $(element).height();
 			
+			// DEBUG
+			document.getElementById('text').innerHTML = "coords " + x + " " + y; 
+			
+			// Clamp between 0-1 of window size
+			this._mousePositionNormalized.x = Math.max(0.0, Math.min(1.0, x / width));
+			this._mousePositionNormalized.y = Math.max(0.0, Math.min(1.0, y / height));
 		},
 		
 		update: function() {
@@ -270,6 +215,37 @@
 		
 		press: function(isPressed) {
 			this._app.netChannel.addMessageToQueue(true, Mrmr.Constants.CMDS.TACTILE_PRESS, { id: this._id, value: isPressed });
+		}
+	};
+	
+}());
+
+(function() {
+	
+	Mrmr.Text = function(app, id) {
+		this._app = app;
+		this._id = id;
+	};
+	
+	Mrmr.Text.prototype = {
+		
+		_app					: null,
+		_id						: null,
+
+		registerEvents: function(text) {
+			var that = this;
+			
+			text.onkeyup = function(e) {
+				// ascii 13 is carriage return
+				if (e.which == 13) {
+					that.enter(this.value);
+					return false;
+				}
+			};
+		},
+		
+		enter: function(string) {
+			this._app.netChannel.addMessageToQueue(true, Mrmr.Constants.CMDS.TEXT_ENTER, { id: this._id, value: string });
 		}
 	};
 	
@@ -309,7 +285,7 @@
 			
 			for (var i = 0; i < doc.length; i++){
 				var button = new Mrmr.Button(that, doc[i].id);
-				button.registerEvents(doc[i]);
+				button.registerEvents(doc[i], false);
 			}
 			
 			// Divs
@@ -319,6 +295,22 @@
 				var div = new Mrmr.TactileZone(that, doc[i].id);
 				div.registerEvents(doc[i]);
 			}
+			
+			// Inputs
+			var doc = document.getElementsByTagName('input');
+			
+			for (var i = 0; i < doc.length; i++){
+				var type = doc[i].type;
+				
+				if (type == 'radio') {
+					var radio = new Mrmr.Button(that, doc[i].id);
+					radio.registerEvents(doc[i], true);
+				} else if (type == 'text') {
+					var text = new Mrmr.Text(that, doc[i].id);
+					text.registerEvents(doc[i]);
+				}
+			}
+
 		},
 
 		update: function() {

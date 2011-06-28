@@ -48,12 +48,8 @@
 	<script src="js/mrmr/ClientApp.js"></script>
 	<script src="js/mrmr/script.js"></script>
 
-
-
 </head>
 <body style="margin: 20px">
-
-
 
 <table>
 
@@ -64,18 +60,33 @@
 <tr><td>&nbsp;</td></tr>
 
 <tr style="text-align: center">
-<td><button id="button1" style="size: 200%">Clear white</button></td>
-<td><button id="button2" style="size: 200%">Clear black</button></td>
+<td><button id="white" style="size: 200%">Clear white</button></td>
+<td><button id="black" style="size: 200%">Clear black</button></td>
+</tr>
+
+
+<tr><td>&nbsp;</td></tr>
+
+<tr>
+<td colspan=2><div id="red" style="background-color: #990000; width: 300px; height: 300px"></div></td>
+</tr>
+
+<tr>
+<td colspan=2><div id="blue" style="background-color: #000099; width: 300px; height: 300px"></div></td>
 </tr>
 
 <tr><td>&nbsp;</td></tr>
 
-<tr colspan=2>
-<td colspan=2><div id="red" style="background-color: #990000; width: 300px; height: 300px"></div></td>
+<tr>
+<td><input type="radio" name="thickness" id="thin" /><label for="thin">Thin</label></td>
+<td><input type="radio" name="thickness" id="thick" /><label for="thick">Thick</label></td>
 </tr>
 
-<tr colspan=2>
-<td colspan=2><div id="blue" style="background-color: #000099; width: 300px; height: 300px"></div></td>
+<tr><td>&nbsp;</td></tr>
+
+
+<tr>
+<td><label for="word">Word</label><input type="text" id="word" /></td>
 </tr>
 
 </table>

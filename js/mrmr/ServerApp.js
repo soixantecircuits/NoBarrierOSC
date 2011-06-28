@@ -30,7 +30,7 @@
 			this.gameClockReal = new Date().getTime();
 
 			var that = this;
-			this.intervalGameTick = setInterval( function(){ that.update() }, Math.floor( 1000/this.targetFramerate ));
+			this.intervalGameTick = setInterval( function(){ that.update(); }, Math.floor( 1000/this.targetFramerate ));
 		},
 
 		// Methods
@@ -48,7 +48,7 @@
 			this.cmdMap[Mrmr.Constants.CMDS.BUTTON_CLICK] = this.buttonClick;
 			this.cmdMap[Mrmr.Constants.CMDS.TACTILE_PRESS] = this.tactilePress;
 			this.cmdMap[Mrmr.Constants.CMDS.TACTILE_MOVE] = this.tactileMove;
-			this.cmdMap[Mrmr.Constants.CMDS.DEBUG] = this.debugCommand;
+			this.cmdMap[Mrmr.Constants.CMDS.TEXT_ENTER] = this.textEnter;
 		},
 
 		/**
@@ -113,15 +113,20 @@
 //			this.oscClient.send(oscMessage);
 		},
 		
-		debugCommand: function(client, data) {
-			console.log('DEBUG', client.clientid, data.payload);
-		},
-		
 		buttonClick: function(client, data) {
 //			console.log('click', client.clientid, data.payload);
 			
 			var oscMessage = new OSC.Message("/nodejs/" + client.clientid);
 			    oscMessage.append([data.payload.id, 'click']);
+
+			this.oscClient.send(oscMessage);
+		},
+		
+		textEnter: function(client, data) {
+//			console.log('text', client.clientid, data.payload);
+			
+			var oscMessage = new OSC.Message("/nodejs/" + client.clientid);
+			    oscMessage.append([data.payload.id, data.payload.value]);
 
 			this.oscClient.send(oscMessage);
 		},
