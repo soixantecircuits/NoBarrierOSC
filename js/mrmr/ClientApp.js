@@ -8,13 +8,16 @@
 	
 	Mrmr.Button.prototype = {
 		
-		_app					: null,
-		_id						: null,
-		_isPressed				: false,
-		_isMouseDown            : false,
+		_app			: null,
+		_id				: null,
+		_isPressed		: false,
+		_isMouseDown	: false,
+		_button			: null,
 
 		registerEvents: function(button, enableDefaultAction) {
 			var that = this;
+			
+			this._button = button;
 			
 			enableDefaultAction = typeof(enableDefaultAction) == 'undefined' ? false : enableDefaultAction;
 			
@@ -58,6 +61,10 @@
 		
 		click: function() {
 			this._app.netChannel.addMessageToQueue(true, Mrmr.Constants.CMDS.BUTTON_CLICK, { id: this._id });
+		},
+		
+		setText: function(text) {
+			this._button.innerHTML = text;
 		}
 		
 	};
@@ -286,6 +293,7 @@
 			for (var i = 0; i < doc.length; i++){
 				var button = new Mrmr.Button(that, doc[i].id);
 				button.registerEvents(doc[i], false);
+				this.components[doc[i].id] = button;
 			}
 			
 			// Divs
@@ -294,6 +302,7 @@
 			for (var i = 0; i < doc.length; i++){
 				var div = new Mrmr.TactileZone(that, doc[i].id);
 				div.registerEvents(doc[i]);
+				this.components[doc[i].id] = div;
 			}
 			
 			// Inputs
@@ -305,24 +314,43 @@
 				if (type == 'radio') {
 					var radio = new Mrmr.Button(that, doc[i].id);
 					radio.registerEvents(doc[i], true);
+					this.components[doc[i].id] = radio;
 				} else if (type == 'text') {
 					var text = new Mrmr.Text(that, doc[i].id);
 					text.registerEvents(doc[i]);
+					this.components[doc[i].id] = text;
 				}
 			}
-
+			
+			console.log("components:", this.components);
+			
 		},
 
 		update: function() {
 			this.updateClock();
+			
+			// Tactile zones
 			
 			for (var hc in this.hoveredComponents) {
 				var div = this.hoveredComponents[hc];
 				div.update();
 			}
 			
+			// From the received messages, update the DOM objects
+			
+			var worldDescriptionBuffer = this.netChannel.getIncomingWorldUpdateBuffer();
+			var worldDescription = worldDescriptionBuffer[worldDescriptionBuffer.length-1];
+			
+			if (worldDescription != null) {
+				var that = this;
+				
+				worldDescription.forEach(function(entityid, entity) {
+					var component = that.components[entityid];
+					component.setText(entity.text);
+				}, this);
+			}
+			
 			this.netChannel.tick();
-//			this.entityController.tick(this.speedFactor, this.gameClockReal, this.gameTick);
 		},
 
 		/**
@@ -367,15 +395,15 @@
 		parseEntityDescriptionArray: function(entityDescAsArray)
 		{
 			var entityDescription = {};
-
+			
 			// It is left upto each game to implement this function because only the game knows what it needs to send.
 			// However the 4 example projects in RealtimeMultiplayerNodeJS offer this an example
-			entityDescription.entityid = +entityDescAsArray[0];
-			entityDescription.clientid = +entityDescAsArray[1];
-			entityDescription.entityType = +entityDescAsArray[2];
-			entityDescription.x = +entityDescAsArray[3];
-			entityDescription.y = +entityDescAsArray[4];
-
+			entityDescription.entityid = entityDescAsArray[0];
+			entityDescription.backgroundColour = entityDescAsArray[1];
+			entityDescription.colour = entityDescAsArray[2];
+			entityDescription.text = entityDescAsArray[3];
+			entityDescription.display = entityDescAsArray[4];
+			
 			return entityDescription;
 		},
 		getGameClock: function() {
@@ -397,4 +425,15 @@
 		log: function() { console.log.apply(console, arguments); }
 
 	};
+	
+	/**
+	 * Required methods for the Mrmr ClientApp field
+	 */
+	Mrmr.ClientAppField = {
+		setText: function(text) {},
+		setBackgroundColour: function(colour) {},
+		setColour: function(colour) {},
+		setDisplay: function(display) {}
+	};
+
 }());

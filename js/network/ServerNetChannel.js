@@ -91,7 +91,7 @@ Version:
 				gameClock: worldDescription.gameClock,
 				gameTick: worldDescription.gameTick
 			};
-
+			
 			// Send client the current world info
 			this.clients.forEach( function(key, client)
 			{

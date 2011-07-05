@@ -19,6 +19,7 @@
 		positionBuffer			: null,
 		netChannel				: null,
 		oscClient				: null,
+		oscServer				: null,
 		cmdMap					: {},					// Map the CMD constants to functions
 		nextEntityID			: 0,					// Incremented for everytime a new object is created
 
@@ -26,10 +27,28 @@
 
 			this.entityController = new RealtimeMultiplayerGame.Controller.EntityController();
 			this.setupNetChannel();
-			this.oscClient = new OSC.Client(Mrmr.Constants.OSC_CONFIG.PORT, Mrmr.Constants.OSC_CONFIG.ADDRESS);
+			this.oscClient = new OSC.Client(Mrmr.Constants.OSC_CLIENT_CONFIG.PORT, Mrmr.Constants.OSC_CONFIG.ADDRESS);
+			this.oscServer = new OSC.Server(Mrmr.Constants.OSC_SERVER_CONFIG.PORT, Mrmr.Constants.OSC_CONFIG.ADDRESS);
+			
+			var that = this;
+			
+			this.oscServer.addMsgForwarder(function(msg) {
+				var entityid = msg[0];
+				var key = msg[2];
+				var value = msg[3];
+				
+				var controllerEntity = that.entityController.getEntityWithid(entityid);
+				
+				if (controllerEntity == null) {
+					controllerEntity = new Mrmr.Controller(entityid);
+					that.entityController.addEntity(controllerEntity);
+				}
+				
+				controllerEntity.update(key, value);
+			});
+			
 			this.gameClockReal = new Date().getTime();
 
-			var that = this;
 			this.intervalGameTick = setInterval( function(){ that.update(); }, Math.floor( 1000/this.targetFramerate ));
 		},
 
@@ -58,14 +77,6 @@
 		update: function() {
 			this.updateClock();
 
-			// Allow all entities to update their position
-			this.entityController.getEntities().forEach( function(key, entity){
-				entity.updatePosition(this.speedFactor, this.gameClock, this.gameTick );
-			}, this );
-
-//			this.sendBufferedOSCMessages();
-
-			// Create a new world-entity-description,
 			var worldEntityDescription = new RealtimeMultiplayerGame.model.WorldEntityDescription( this, this.entityController.getEntities() );
 			this.netChannel.tick( this.gameClock, worldEntityDescription );
 		},
@@ -141,10 +152,10 @@
 		},
 		
 		shouldAddPlayer: function( aClientid, data ) {
-			var playerEntity = new RealtimeMultiplayerGame.model.GameEntity( this.getNextEntityID(), aClientid );
-			this.playerInfoBuffer.setObjectForKey([], aClientid);
-
-			this.entityController.addEntity( playerEntity );
+//			var playerEntity = new RealtimeMultiplayerGame.model.GameEntity( this.getNextEntityID(), aClientid );
+//			this.playerInfoBuffer.setObjectForKey([], aClientid);
+//
+//			this.entityController.addEntity( playerEntity );
 		},
 
 		shouldUpdatePlayer: function( client, data ) {

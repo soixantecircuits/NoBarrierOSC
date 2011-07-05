@@ -32,7 +32,6 @@ Version:
 		// Ask each entity to create it's EntityDescriptionString
 		this.entities = [];
 
-
 		return this;
 	};
 
