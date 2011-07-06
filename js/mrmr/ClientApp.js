@@ -1,263 +1,4 @@
 
-(function() {
-	
-	Mrmr.Button = function(app, id) {
-		this._app = app;
-		this._id = id;
-	};
-	
-	Mrmr.Button.prototype = {
-		
-		_app			: null,
-		_id				: null,
-		_isPressed		: false,
-		_isMouseDown	: false,
-		_button			: null,
-
-		registerEvents: function(button, enableDefaultAction) {
-			var that = this;
-			
-			this._button = button;
-			
-			enableDefaultAction = typeof(enableDefaultAction) == 'undefined' ? false : enableDefaultAction;
-			
-			button.onmousedown = function() {
-				that.press(true);
-				that._isMouseDown = true;
-				that._isPressed = true;
-			};
-			
-			button.onmouseout = function() {
-				if (that._isMouseDown) {
-					that.press(false);
-					that._isPressed = false;
-				}
-			};
-			
-			button.onmouseover = function() {
-				if (that._isMouseDown) {
-					that.press(true);
-					that._isPressed = true;
-				}
-			};
-			
-			button.onmouseup = function() {
-				if (that._isMouseDown) {
-					that.press(false);
-					that._isMouseDown = false;
-					that._isPressed = false;
-				}
-			};
-			
-			button.onclick = function() {
-				that.click();
-				return enableDefaultAction;
-			};
-		},
-		
-		press: function(isPressed) {
-			this._app.netChannel.addMessageToQueue(true, Mrmr.Constants.CMDS.BUTTON_PRESS, { id: this._id, value: isPressed });
-		},
-		
-		click: function() {
-			this._app.netChannel.addMessageToQueue(true, Mrmr.Constants.CMDS.BUTTON_CLICK, { id: this._id });
-		},
-		
-		setText: function(text) {
-			this._button.innerHTML = text;
-		}
-		
-	};
-	
-}());
-
-(function() {
-	
-	Mrmr.TactileZone = function(app, id) {
-		this._app = app;
-		this._id = id;
-	};
-	
-	Mrmr.TactileZone.prototype = {
-			
-		_app					: null,
-		_id						: null,
-		
-		_isOver					: false,
-		_isPressed				: false,
-		_mousePosition			: {},		// Actual mouse position
-		_mousePositionNormalized: {},		// Mouse position 0-1
-
-		/**
-		 * Initialize mouse/touch events
-		 */
-		registerEvents: function(div) {
-			var that = this;
-			
-			div.onmousedown = function(e) {
-				that.press(true);
-				that._isMouseDown = true;
-				that._isPressed = true;
-			};
-			
-			div.onmouseout = function(e) {
-				if (that._isMouseDown) {
-					that.press(false);
-					that._isPressed = false;
-				}
-				
-				that.removeHover();
-			};
-			
-			div.onmouseover = function(e) {
-				if (that._isMouseDown) {
-					that.press(true);
-					that._isPressed = true;
-				}
-				
-				that.addHover();
-			};
-			
-			div.onmouseup = function(e) {
-				if (that._isMouseDown) {
-					that.press(false);
-					that._isMouseDown = false;
-					that._isPressed = false;
-				}
-				
-				that.removeHover();
-			};
-			
-
-			div.ontouchstart = function(e) {
-				that.addHover();
-				e.preventDefault();
-			};
-			
-			div.ontouchend = function(e) {
-				that.removeHover();
-				e.preventDefault();
-			};
-			
-			div.ontouchcancel = function(e) { 
-				that.removeHover();
-				e.preventDefault();
-			};
-
-			div.onmousemove = function(e) {
-				var x, y;
-
-				// Get the mouse position relative to the canvas element.
-				if (e.layerX || e.layerX == 0) { // Firefox
-					x = e.layerX;
-					y = e.layerY;
-				} else if (e.offsetX || e.offsetX == 0) { // Opera
-					x = e.offsetX;
-					y = e.offsetY;
-				}
-				
-				that.move(x, y, this);
-			};
-			
-			div.ontouchmove = function(e) {
-				var x, y;
-
-				var touches = event.changedTouches,
-				      first = touches[0],
-				          x = first.pageX;
-				          y = first.pageY;
-				
-				that.move(x, y, this);
-			};
-		},
-		
-		addHover: function() {
-			if (!this._isOver) {
-				this._app.hoveredComponents[this._id] = this;
-				this._isOver = true;
-			}
-		},
-		
-		removeHover: function() {
-			if (this._isOver) {
-				delete(this._app.hoveredComponents[this._id]);
-				this._isOver = false;
-			}
-		},
-		
-		move: function(x, y, element) {
-			var curLeft = curTop = 0;
-			var obj = element;
-			
-			// Find absolute offset
-			
-			if (obj.offsetParent) {
-				do {
-					curLeft += obj.offsetLeft;
-					curTop += obj.offsetTop;
-				} while (obj = obj.offsetParent);
-			}
-			
-			x -= curLeft;
-			y -= curTop;
-			
-			this._mousePosition.x = x;
-			this._mousePosition.y = y;
-			
-			var width = $(element).width();
-			var height = $(element).height();
-			
-			// DEBUG
-			document.getElementById('text').innerHTML = "coords " + x + " " + y; 
-			
-			// Clamp between 0-1 of window size
-			this._mousePositionNormalized.x = Math.max(0.0, Math.min(1.0, x / width));
-			this._mousePositionNormalized.y = Math.max(0.0, Math.min(1.0, y / height));
-		},
-		
-		update: function() {
-			this._app.netChannel.addMessageToQueue(false, Mrmr.Constants.CMDS.TACTILE_MOVE,
-					{ id: this._id, x: (this._mousePositionNormalized.x*100) << 0, y: (this._mousePositionNormalized.y*100) << 0 });
-		},
-		
-		press: function(isPressed) {
-			this._app.netChannel.addMessageToQueue(true, Mrmr.Constants.CMDS.TACTILE_PRESS, { id: this._id, value: isPressed });
-		}
-	};
-	
-}());
-
-(function() {
-	
-	Mrmr.Text = function(app, id) {
-		this._app = app;
-		this._id = id;
-	};
-	
-	Mrmr.Text.prototype = {
-		
-		_app					: null,
-		_id						: null,
-
-		registerEvents: function(text) {
-			var that = this;
-			
-			text.onkeyup = function(e) {
-				// ascii 13 is carriage return
-				if (e.which == 13) {
-					that.enter(this.value);
-					return false;
-				}
-			};
-		},
-		
-		enter: function(string) {
-			this._app.netChannel.addMessageToQueue(true, Mrmr.Constants.CMDS.TEXT_ENTER, { id: this._id, value: string });
-		}
-	};
-	
-}());
-
 (function(){
 
 	Mrmr.ClientApp = function() {
@@ -282,6 +23,8 @@
 		
 		components				: {},
 		hoveredComponents		: {},
+		
+		lastWorldGameTick		: -1,
 
 		registerElements: function() {
 			
@@ -321,9 +64,6 @@
 					this.components[doc[i].id] = text;
 				}
 			}
-			
-			console.log("components:", this.components);
-			
 		},
 
 		update: function() {
@@ -342,12 +82,23 @@
 			var worldDescription = worldDescriptionBuffer[worldDescriptionBuffer.length-1];
 			
 			if (worldDescription != null) {
+				if (worldDescription.gameTick == this.lastWorldGameTick) {
+					// Not a new world description
+					return;
+				}
+				
+				this.lastWorldGameTick = worldDescription.gameTick;
+				
 				var that = this;
 				
 				worldDescription.forEach(function(entityid, entity) {
 					var component = that.components[entityid];
 					component.setText(entity.text);
+					component.setBackgroundColor(entity.backgroundColor);
+					component.setColor(entity.color);
+					component.setEnabled(entity.enabled);
 				}, this);
+				
 			}
 			
 			this.netChannel.tick();
@@ -399,10 +150,10 @@
 			// It is left upto each game to implement this function because only the game knows what it needs to send.
 			// However the 4 example projects in RealtimeMultiplayerNodeJS offer this an example
 			entityDescription.entityid = entityDescAsArray[0];
-			entityDescription.backgroundColour = entityDescAsArray[1];
-			entityDescription.colour = entityDescAsArray[2];
+			entityDescription.backgroundColor = entityDescAsArray[1];
+			entityDescription.color = entityDescAsArray[2];
 			entityDescription.text = entityDescAsArray[3];
-			entityDescription.display = entityDescAsArray[4];
+			entityDescription.enabled = entityDescAsArray[4];
 			
 			return entityDescription;
 		},
@@ -431,9 +182,9 @@
 	 */
 	Mrmr.ClientAppField = {
 		setText: function(text) {},
-		setBackgroundColour: function(colour) {},
-		setColour: function(colour) {},
-		setDisplay: function(display) {}
+		setBackgroundColor: function(color) {},
+		setColor: function(color) {},
+		setEnabled: function(enabled) {}
 	};
 
 }());

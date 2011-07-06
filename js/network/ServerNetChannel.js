@@ -86,6 +86,13 @@ Version:
 		tick: function( gameClock, worldDescription )
 		{
 			var worldEntityDescriptionString = worldDescription.getEntityDescriptionAsString();
+			
+			if (worldEntityDescriptionString == null || worldEntityDescriptionString.length == 0) {
+				return;
+			}
+
+			console.log(worldEntityDescriptionString);
+			
 			var entityDescriptionObject = {
 				entities: worldEntityDescriptionString,
 				gameClock: worldDescription.gameClock,

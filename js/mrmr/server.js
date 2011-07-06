@@ -26,7 +26,8 @@ require("../model/WorldEntityDescription.js");
 require("./MrmrNamespace.js");
 require("./MrmrConstants.js");
 require("./ServerApp.js");
-require("./Controller.js");
+require("./MrmrEntity.js");
+require("./MrmrInterface.js");
 
 var serverApp = new Mrmr.ServerApp();
 serverApp.startGameClock();
