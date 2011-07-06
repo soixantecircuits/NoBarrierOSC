@@ -39,10 +39,8 @@
 	Mrmr.Controller.prototype.isStale = function() {
 		if (this._updated) {
 			this._updated = false;
-			console.log("fresh");
 			return false;
 		} else {
-//			console.log("stale");
 			return true;
 		}
 	};
