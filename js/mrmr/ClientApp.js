@@ -82,23 +82,20 @@
 			var worldDescription = worldDescriptionBuffer[worldDescriptionBuffer.length-1];
 			
 			if (worldDescription != null) {
-				if (worldDescription.gameTick == this.lastWorldGameTick) {
-					// Not a new world description
-					return;
+				if (worldDescription.gameTick != this.lastWorldGameTick) {
+					// We have seen a new world description
+					this.lastWorldGameTick = worldDescription.gameTick;
+					
+					var that = this;
+					
+					worldDescription.forEach(function(entityid, entity) {
+						var component = that.components[entityid];
+						component.setText(entity.text);
+						component.setBackgroundColor(entity.backgroundColor);
+						component.setColor(entity.color);
+						component.setEnabled(entity.enabled);
+					}, this);
 				}
-				
-				this.lastWorldGameTick = worldDescription.gameTick;
-				
-				var that = this;
-				
-				worldDescription.forEach(function(entityid, entity) {
-					var component = that.components[entityid];
-					component.setText(entity.text);
-					component.setBackgroundColor(entity.backgroundColor);
-					component.setColor(entity.color);
-					component.setEnabled(entity.enabled);
-				}, this);
-				
 			}
 			
 			this.netChannel.tick();
