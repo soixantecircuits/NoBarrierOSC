@@ -156,18 +156,26 @@
 //			this.playerInfoBuffer.setObjectForKey([], aClientid);
 //
 //			this.entityController.addEntity( playerEntity );
+			
+			var oscMessage = new OSC.Message("/nodejs/" + aClientid);
+		        oscMessage.append(['connected']);
+
+//			this.playerInfoBuffer.objectForKey(client.clientid).push(oscMessage);
+			this.oscClient.send(oscMessage);
 		},
 
 		shouldUpdatePlayer: function( client, data ) {
-			var oscMessage = new OSC.Message("/nodejs/" + client.clientid);
-				oscMessage.append([data.payload.x, data.payload.y]);
-
-			this.playerInfoBuffer.objectForKey(client.clientid).push(oscMessage);
+//			var oscMessage = new OSC.Message("/nodejs/" + client.clientid);
+//				oscMessage.append([data.payload.x, data.payload.y]);
+//
+//			this.playerInfoBuffer.objectForKey(client.clientid).push(oscMessage);
 		},
 
 		shouldRemovePlayer: function( clientid ) {
-			this.playerInfoBuffer.remove( clientid );
-			this.entityController.removePlayer( clientid );
+			var oscMessage = new OSC.Message("/nodejs/" + clientid);
+		        oscMessage.append(['disconnected']);
+		        
+			this.oscClient.send(oscMessage);
 		},
 
 		shouldEndGame: function() {

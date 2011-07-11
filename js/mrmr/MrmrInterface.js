@@ -248,7 +248,7 @@
 		var height = $(element).height();
 		
 		// DEBUG
-		document.getElementById('text').innerHTML = "coords " + x + " " + y; 
+//		document.getElementById('text').innerHTML = "coords " + x + " " + y; 
 		
 		// Clamp between 0-1 of window size
 		this._mousePositionNormalized.x = Math.max(0.0, Math.min(1.0, x / width));

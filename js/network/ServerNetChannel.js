@@ -165,7 +165,8 @@ Version:
 				return;
 			}
 
-
+//			console.log(data);
+			
 			//// Call the mapped function, always pass the connection. Also pass data if available
 			if( this.cmdMap[data.cmd] ) {
 				this.cmdMap[data.cmd].call(this, client, data);
