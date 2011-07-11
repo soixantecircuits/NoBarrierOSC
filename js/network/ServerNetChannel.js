@@ -86,12 +86,18 @@ Version:
 		tick: function( gameClock, worldDescription )
 		{
 			var worldEntityDescriptionString = worldDescription.getEntityDescriptionAsString();
+			
+			// Do not bother sending an empty update to the clients. Entities may not have fresh updates.
+			if (worldEntityDescriptionString == null || worldEntityDescriptionString.length == 0) {
+				return;
+			}
+
 			var entityDescriptionObject = {
 				entities: worldEntityDescriptionString,
 				gameClock: worldDescription.gameClock,
 				gameTick: worldDescription.gameTick
 			};
-
+			
 			// Send client the current world info
 			this.clients.forEach( function(key, client)
 			{

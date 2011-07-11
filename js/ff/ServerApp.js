@@ -2,12 +2,12 @@
 (function(){
 	var OSC = require('../lib/osc');
 
-	Demo.ServerApp = function() {
+	ff.ServerApp = function() {
 		this.playerInfoBuffer = new SortedLookupTable();
 		this.setupCmdMap();
 	};
 
-	Demo.ServerApp.prototype = {
+	ff.ServerApp.prototype = {
 		gameClockReal  			: 0,											// Actual time via "new Date().getTime();"
 		gameClock				: 0,											// Seconds since start
 		gameTick				: 0,											// Ticks/frames since start
@@ -26,7 +26,7 @@
 
 			this.entityController = new RealtimeMultiplayerGame.Controller.EntityController();
 			this.setupNetChannel();
-			this.oscClient = new OSC.Client(Demo.Constants.OSC_CONFIG.PORT, Demo.Constants.OSC_CONFIG.ADDRESS);
+			this.oscClient = new OSC.Client(ff.Constants.OSC_CONFIG.PORT, ff.Constants.OSC_CONFIG.ADDRESS);
 			this.gameClockReal = new Date().getTime();
 
 			var that = this;
@@ -44,9 +44,11 @@
 		 * If it is set, it will call that CMD on its delegate
 		 */
 		setupCmdMap: function() {
-			this.cmdMap[RealtimeMultiplayerGame.Constants.CMDS.PLAYER_UPDATE] = this.shouldUpdatePlayer;
-			this.cmdMap[Demo.Constants.CMDS.PLAYER_MOUSE_STATE] = this.shouldSetPlayerMouseState;
-			this.cmdMap[Demo.Constants.CMDS.PLAYER_ALT_STATE] = this.shouldSetPlayerAltState;
+			this.cmdMap[ff.Constants.CMDS.BUTTON_PRESS] = this.buttonPress;
+			this.cmdMap[ff.Constants.CMDS.BUTTON_CLICK] = this.buttonClick;
+			this.cmdMap[ff.Constants.CMDS.TACTILE_PRESS] = this.tactilePress;
+			this.cmdMap[ff.Constants.CMDS.TACTILE_MOVE] = this.tactileMove;
+			this.cmdMap[ff.Constants.CMDS.DEBUG] = this.debugCommand;
 		},
 
 		/**
@@ -61,29 +63,11 @@
 				entity.updatePosition(this.speedFactor, this.gameClock, this.gameTick );
 			}, this );
 
-			this.sendBufferedOSCMessages();
+//			this.sendBufferedOSCMessages();
 
 			// Create a new world-entity-description,
 			var worldEntityDescription = new RealtimeMultiplayerGame.model.WorldEntityDescription( this, this.entityController.getEntities() );
 			this.netChannel.tick( this.gameClock, worldEntityDescription );
-		},
-
-		/**
-		 * Sends all queued OSC messages for each client connected
-		 */
-		sendBufferedOSCMessages: function() {
-			// For each player, send their messages
-			this.playerInfoBuffer.forEach( function(key, clientMessageBuffer) {
-				var i = clientMessageBuffer.length;
-				while (i--) {
-					// This entity is not active - remove
-					var oscMessage = clientMessageBuffer[i];
-					this.oscClient.send(oscMessage);
-				}
-
-				// Reset buffer array
-				this.playerInfoBuffer.setObjectForKey([], key);
-			}, this );
 		},
 
 		/**
@@ -104,49 +88,74 @@
 			this.speedFactor = delta / ( 1000/this.targetFramerate );
 			if (this.speedFactor <= 0) this.speedFactor = 1;
 		},
+		
+		buttonPress: function(client, data) {
+//			console.log('press', client.clientid, data.payload, data.payload.id, data.payload.value);
+			
+			var oscMessage = new OSC.Message("/nodejs/" + client.clientid);
+			    oscMessage.append([data.payload.id, 'press', data.payload.value ? 0 : 1]);
+			    
+//			console.log(data.payload.value ? 0 : 1, data.payload.value);
+			
+			// TODO: re-implement. currently gives unexpected values.
+//			this.oscClient.send(oscMessage);
+		},
+		
+		tactilePress: function(client, data) {
+//			console.log('press', client.clientid, data.payload);
+			
+			var oscMessage = new OSC.Message("/nodejs/" + client.clientid);
+			    oscMessage.append([data.payload.id, 'press', data.payload.value ? 0 : 1]);
+			    
+//			console.log(data.payload.value ? 0 : 1, data.payload.value);
+			
+			// TODO: re-implement. currently gives unexpected values.
+//			this.oscClient.send(oscMessage);
+		},
+		
+		debugCommand: function(client, data) {
+			console.log('DEBUG', client.clientid, data.payload);
+		},
+		
+		buttonClick: function(client, data) {
+			console.log('click', client.clientid, data.payload);
+			
+			var oscMessage = new OSC.Message("/nodejs/" + client.clientid);
+			    oscMessage.append([data.payload.id, 'click']);
 
-
-		shouldAddPlayer: function( aClientid, data ) {
-			console.log("shouldAddPlayer");
-			var playerEntity = new RealtimeMultiplayerGame.model.GameEntity( this.getNextEntityID(), aClientid );
-			playerEntity.mouseIsDown = 0;
-			playerEntity.altIsDown = 0;
-
-			this.playerInfoBuffer.setObjectForKey([], aClientid);
-			this.entityController.addPlayer( playerEntity );
-
-			var oscMessage = new OSC.Message("/nodejs/" + playerEntity.clientid);
-				oscMessage.append(["add", String(playerEntity.clientid)]);
 			this.oscClient.send(oscMessage);
+		},
+		
+		tactileMove: function(client, data) {
+			console.log('move', client.clientid, data.payload);
+			
+			var oscMessage = new OSC.Message("/nodejs/" + client.clientid);
+			    oscMessage.append([data.payload.id, 'move', data.payload.x, data.payload.y]);
+
+			this.oscClient.send(oscMessage);
+		},
+		
+		shouldAddPlayer: function( aClientid, data ) {
+			var playerEntity = new RealtimeMultiplayerGame.model.GameEntity( this.getNextEntityID(), aClientid );
+			this.playerInfoBuffer.setObjectForKey([], aClientid);
+
+			this.entityController.addEntity( playerEntity );
 		},
 
 		shouldUpdatePlayer: function( client, data ) {
-			var player = this.entityController.getPlayerWithid( client.clientid );
 			var oscMessage = new OSC.Message("/nodejs/" + client.clientid);
-			oscMessage.append(["mov", player.altIsDown, player.mouseIsDown, data.payload.x, data.payload.y]);
+				oscMessage.append([data.payload.x, data.payload.y]);
+
 			this.playerInfoBuffer.objectForKey(client.clientid).push(oscMessage);
 		},
 
-		shouldSetPlayerMouseState: function( client, data ) {
-			console.log("shouldSetPlayerMouseState");
-
-			var player = this.entityController.getPlayerWithid( client.clientid );
-			player.mouseIsDown = ( data.payload.state === true ) ? 1 : 0;
-		},
-
-		shouldSetPlayerAltState: function( client, data ) {
-			var player = this.entityController.getPlayerWithid( client.clientid );
-			player.altIsDown = ( data.payload.state === true ) ? 1 : 0;
-		},
-
-
 		shouldRemovePlayer: function( clientid ) {
-			var oscMessage = new OSC.Message("/nodejs/" + clientid);
-				oscMessage.append(["drop", String(clientid)]);
-			this.oscClient.send(oscMessage);
-
 			this.playerInfoBuffer.remove( clientid );
 			this.entityController.removePlayer( clientid );
+		},
+
+		shouldEndGame: function() {
+			console.log("(ffApp)::shouldEndGame");
 		},
 
 	   	log: function() { console.log.apply(console, arguments); },

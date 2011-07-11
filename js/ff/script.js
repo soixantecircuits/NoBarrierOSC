@@ -7,14 +7,12 @@
  */
 (function(){
 	var onLoad = function( event ) {
-		var app = new Demo.ClientApp();
+		var app = new ff.ClientApp();
 
 		// Loop
 		(function loop() {
 			app.update();
-			if( app.isActive() ) {
-				window.requestAnimationFrame( loop, null );
-			}
+			window.requestAnimationFrame( loop, null );
 		})();
 	};
 

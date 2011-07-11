@@ -32,7 +32,6 @@ Version:
 		// Ask each entity to create it's EntityDescriptionString
 		this.entities = [];
 
-
 		return this;
 	};
 
@@ -51,8 +50,10 @@ Version:
 			var fullDescriptionString = '';
 
 			this.allEntities.forEach( function(key, entity) {
-				var entityDescriptionString = entity.constructEntityDescription(this.gameTick);
-				fullDescriptionString += "|" + entityDescriptionString;
+				if (!entity.isStale()) {
+					var entityDescriptionString = entity.constructEntityDescription(this.gameTick);
+					fullDescriptionString += "|" + entityDescriptionString;
+				}
 			}, this );
 
 			return fullDescriptionString;

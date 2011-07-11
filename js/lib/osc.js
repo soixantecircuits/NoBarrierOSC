@@ -51,7 +51,7 @@ Message.prototype = {
         binary = binary.concat(OSCString(this.typetags));
         binary = binary.concat(this.message);
         return binary;
-    },
+    }
 }
 exports.Message = Message;
 
@@ -100,7 +100,7 @@ exports.Bundle = Bundle;
 var OSCString = function (next) {
     var len = Math.ceil((next.length + 1) / 4.0) * 4;
     var foo = jspack.Pack('>' + len + 's', [next]);
-    return foo
+    return foo;
 }
 
 var OSCBlob = function (next) {
@@ -177,7 +177,7 @@ Client.prototype = {
         var msg = new Message(address);
         msg.append(data);
         this.send(msg);
-    },
+    }
 }
 
 exports.Client = Client;
@@ -291,6 +291,7 @@ var decodeOSC = function (data) {
 var Server = function(port, host) {
     
     var _callbacks = [];
+    var _msgForwarders = [];
     this.port = port;
     this.host = host;
     this._sock = dgram.createSocket('udp4');
@@ -319,11 +320,16 @@ var Server = function(port, host) {
                 _callbacks[c].callback(decoded[0], decoded[2]);
             }
         }
+        
+        for (var i = 0; i < _msgForwarders.length; i++) {
+        	var forwarder = _msgForwarders[i];
+        	forwarder.callback(decoded);
+        }
     });
 
     this.addMsgHandler = function(address, callback) {
         // if not regex do some replacement
-        if (typeof(addresss) == 'string') {
+        if (typeof(address) == 'string') {
             address = '/' + address.replace('/', '');
         }
         _callbacks.push({'address': address,
@@ -338,7 +344,11 @@ var Server = function(port, host) {
             }
         }
     };
+    
+    this.addMsgForwarder = function(callback) {
+    	_msgForwarders.push({'callback': callback});
+    };
 
-}
+};
 
-exports.Server = Server;
+exports.Server = Server

@@ -53,6 +53,15 @@ Version:
 		updatePosition: function( speedFactor, gameClock, gameTick ) {
 			// OVERRIDE
 		},
+		
+		/**
+		 * Next iteration of the data from WorldEntityDescription will contain this entity's string if the data is stale
+		 * @return {Boolean} entity data's stale
+		 */
+		isStale: function() {
+			// OVERRIDE
+			return true; // Entity data is always considered stale and sent every iteration
+		},
 
 		/**
 		 * Construct an entity description for this object, it is essentually a CSV so you have to know how to read it on the receiving end
