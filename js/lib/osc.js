@@ -255,7 +255,20 @@ var decodeOSC = function (data) {
     var pair = _readString(data);
     var address = pair[0];
     var rest = pair[1];
-
+    
+    // TODO: Okay this needs to be fixed and made into a real parser...
+    if (address == "#bundle") {
+    	while (true) {
+	    	pair = _readString(rest);
+	    	address = pair[0];
+	    	rest = pair[1];
+	    	
+	    	if (address != 0) {
+	    		break;
+	    	}
+    	}
+    }
+    
     // if we have rest, maybe we have some typetags... let see...
     if (rest.length > 0) {
         // now we advance on the old rest, getting <typetags>
