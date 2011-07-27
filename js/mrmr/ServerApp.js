@@ -24,7 +24,7 @@
 		nextEntityID			: 0,					// Incremented for everytime a new object is created
 
 		startGameClock: function() {
-
+			
 			this.entityController = new RealtimeMultiplayerGame.Controller.EntityController();
 			this.setupNetChannel();
 			this.oscClient = new OSC.Client(Mrmr.Constants.OSC_CLIENT_CONFIG.PORT, Mrmr.Constants.OSC_CONFIG.ADDRESS);

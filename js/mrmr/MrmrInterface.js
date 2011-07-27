@@ -292,6 +292,7 @@
 			// ascii 13 is carriage return
 			if (e.which == 13) {
 				that.enter(this.value);
+				this._widget.value = "";
 				return false;
 			}
 		};
